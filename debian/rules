@@ -1,0 +1,53 @@
+#!/usr/bin/make -f
+DEB_HOST_ARCH ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+TELEVISION_VERSION := $(shell dpkg-parsechangelog -S Version | sed 's/[-~].*//')
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+
+# Upstream tags carry no "v" prefix. amd64 uses the statically linked musl
+# build (the glibc x86_64 build requires GLIBC_2.39, too new for bookworm and
+# jammy); arm64/i386 only exist as glibc builds but need GLIBC_2.18 at most.
+override_dh_auto_build:
+	@arch="$(DEB_HOST_ARCH)"; \
+	case "$$arch" in \
+		amd64) TV_RELEASE="tv-$(TELEVISION_VERSION)-x86_64-unknown-linux-musl" ;; \
+		arm64) TV_RELEASE="tv-$(TELEVISION_VERSION)-aarch64-unknown-linux-gnu" ;; \
+		i386)  TV_RELEASE="tv-$(TELEVISION_VERSION)-i686-unknown-linux-gnu" ;; \
+		*) echo "Unsupported architecture: $$arch"; exit 1 ;; \
+	esac; \
+	echo "Downloading $$TV_RELEASE for $(TELEVISION_VERSION)..."; \
+	wget -q "https://github.com/alexpasmantier/television/releases/download/$(TELEVISION_VERSION)/$$TV_RELEASE.tar.gz"; \
+	tar -xf "$$TV_RELEASE.tar.gz"; \
+	rm -f "$$TV_RELEASE.tar.gz"; \
+	chmod +x "$$TV_RELEASE/tv"; \
+	mkdir -p completions; \
+	"./$$TV_RELEASE/tv" completions bash > completions/tv.bash; \
+	"./$$TV_RELEASE/tv" completions zsh  > completions/_tv; \
+	"./$$TV_RELEASE/tv" completions fish > completions/tv.fish; \
+	echo "$$TV_RELEASE" > .television_release_name
+
+# The package is named "television" but upstream's binary is "tv"; shell
+# completions are therefore installed under the binary name.
+override_dh_auto_install:
+	@TV_RELEASE=$$(cat .television_release_name); \
+	install -D -m 755 "$$TV_RELEASE/tv" debian/television/usr/bin/tv; \
+	install -D -m 644 "$$TV_RELEASE/doc/tv.1" debian/television/usr/share/man/man1/tv.1; \
+	install -D -m 644 completions/tv.bash debian/television/usr/share/bash-completion/completions/tv; \
+	install -D -m 644 completions/tv.fish debian/television/usr/share/fish/vendor_completions.d/tv.fish; \
+	install -D -m 644 completions/_tv debian/television/usr/share/zsh/vendor-completions/_tv
+
+override_dh_auto_test:
+
+override_dh_auto_clean:
+	@if [ -f .television_release_name ]; then \
+		TV_RELEASE=$$(cat .television_release_name); \
+		rm -rf "$$TV_RELEASE" .television_release_name || true; \
+	fi
+	rm -rf completions
+
+override_dh_strip:
+
+override_dh_shlibdeps:

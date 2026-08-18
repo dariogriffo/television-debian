@@ -1,0 +1,23 @@
+Source: television
+Section: utils
+Priority: optional
+Maintainer: Dario Griffo <dariogriffo@gmail.com>
+Build-Depends: debhelper-compat (= 13), wget, ca-certificates
+Standards-Version: 4.6.2
+Homepage: https://github.com/alexpasmantier/television
+Rules-Requires-Root: no
+
+Package: television
+Architecture: amd64 arm64 i386
+Depends: ${misc:Depends}
+Conflicts: treeviewx
+Description: a very fast, portable and hackable fuzzy finder for the terminal
+ Television lets you search in real time through any kind of data source
+ (called "channels") such as files, code, notes, processes, git repositories,
+ environment variables or docker containers, with preview support,
+ customizable actions and keybindings, and shell/editor integration.
+ .
+ The command provided by this package is "tv".
+ .
+ This package conflicts with treeviewx, which ships the same /usr/bin/tv
+ and /usr/share/man/man1/tv.1.gz paths.
