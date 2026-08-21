@@ -11,6 +11,15 @@ on:
         description: The build version.
         type: string
         required: true
+      architecture:
+        description: Architecture to build (amd64, arm64, i386, or 'all' for all architectures)
+        type: choice
+        default: 'all'
+        options:
+          - 'all'
+          - 'amd64'
+          - 'arm64'
+          - 'i386'
 
 permissions:
   contents: write
@@ -29,7 +38,7 @@ jobs:
         run: ./validate_license.sh ${{ inputs.television_version }}
 
       - name: Build television
-        run: ./build.sh ${{ inputs.television_version }} ${{ inputs.build_version }}
+        run: ./build.sh ${{ inputs.television_version }} ${{ inputs.build_version }} ${{ inputs.architecture }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
